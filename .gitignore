@@ -1,0 +1,6 @@
+__pycache__/
+*.py[cod]
+.python_packages/
+.venv/
+.env
+local.settings.json
