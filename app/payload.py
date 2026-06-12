@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import PurePosixPath
 from typing import Any, Optional
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 
 MEDIA_EXTENSIONS = {
@@ -45,7 +45,31 @@ def file_url_from_payload(payload: dict[str, Any]) -> Optional[str]:
 
 def file_name_from_payload(payload: dict[str, Any]) -> str:
     value = first_value(payload, "fileName", "name", "displayName")
-    return str(value) if value else ""
+    if value:
+        return str(value)
+
+    file_url = file_url_from_payload(payload)
+    return file_name_from_url(str(file_url)) if file_url else ""
+
+
+def file_name_from_url(file_url: str) -> str:
+    parsed_url = urlparse(file_url)
+    query = parse_qs(parsed_url.query)
+
+    for name in ("file", "filename", "fileName"):
+        values = query.get(name)
+        if values and values[0]:
+            return values[0]
+
+    for name in ("id", "RootFolder"):
+        values = query.get(name)
+        if values and values[0]:
+            path_name = PurePosixPath(values[0]).name
+            if path_name and "." in path_name:
+                return path_name
+
+    path_name = PurePosixPath(parsed_url.path).name
+    return path_name if path_name and "." in path_name else ""
 
 
 def extension_from_payload(payload: dict[str, Any]) -> str:
