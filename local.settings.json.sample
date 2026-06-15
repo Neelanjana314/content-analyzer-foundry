@@ -6,6 +6,19 @@
     "AZURE_CONTENT_UNDERSTANDING_ENDPOINT": "https://<your-resource>.services.ai.azure.com/",
     "CONTENT_UNDERSTANDING_KEY": "<your-local-testing-key>",
     "CONTENT_UNDERSTANDING_ANALYZER_ID": "prebuilt-videoSearch",
-    "CONTENT_UNDERSTANDING_API_VERSION": "2025-11-01"
+    "CONTENT_UNDERSTANDING_API_VERSION": "2025-11-01",
+    "SHAREPOINT_SCAN_SCHEDULE": "0 */15 * * * *",
+    "SHAREPOINT_RUN_ON_STARTUP": "false",
+    "SHAREPOINT_USE_MONITOR": "true",
+    "SHAREPOINT_SITE_HOSTNAME": "<tenant>.sharepoint.com",
+    "SHAREPOINT_SITE_PATH": "/sites/<site-name>",
+    "SHAREPOINT_SITE_ID": "",
+    "SHAREPOINT_DRIVE_ID": "",
+    "SHAREPOINT_OUTPUT_DRIVE_ID": "",
+    "SHAREPOINT_INPUT_FOLDER_PATH": "",
+    "SHAREPOINT_OUTPUT_FOLDER_PATH": "",
+    "SHAREPOINT_STATE_FILE_PATH": ".content-analyzer-state.json",
+    "SHAREPOINT_INITIAL_LOOKBACK_MINUTES": "60",
+    "SHAREPOINT_RECURSIVE": "false"
   }
 }

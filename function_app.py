@@ -1,88 +1,47 @@
 from __future__ import annotations
 
-import json
 import logging
-from typing import Any
+import os
 
 import azure.functions as func
 import requests
 from azure.core.exceptions import AzureError
 from dotenv import load_dotenv
 
-from app.workflow import process_sharepoint_media
+from app.workflow import scan_sharepoint_delta
 
 
 load_dotenv()
 
-app = func.FunctionApp(http_auth_level=func.AuthLevel.FUNCTION)
+app = func.FunctionApp()
 
 
-def _json_response(body: dict[str, Any], status_code: int = 200) -> func.HttpResponse:
-    return func.HttpResponse(
-        json.dumps(body, default=str),
-        status_code=status_code,
-        mimetype="application/json",
-    )
+def _env_bool(name: str, default: bool = False) -> bool:
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return value.lower() in {"1", "true", "yes"}
 
 
-def _parse_body(req: func.HttpRequest) -> dict[str, Any]:
+@app.function_name(name="ScheduledSharePointMediaScan")
+@app.timer_trigger(
+    schedule="%SHAREPOINT_SCAN_SCHEDULE%",
+    arg_name="timer",
+    run_on_startup=_env_bool("SHAREPOINT_RUN_ON_STARTUP"),
+    use_monitor=_env_bool("SHAREPOINT_USE_MONITOR", True),
+)
+def scheduled_sharepoint_media_scan(timer: func.TimerRequest) -> None:
+    if timer.past_due:
+        logging.warning("Scheduled SharePoint media scan is running later than expected.")
+
+    logging.info("Starting scheduled SharePoint media scan.")
     try:
-        payload = req.get_json()
-    except ValueError:
-        return {}
+        summary = scan_sharepoint_delta()
+    except (AzureError, requests.HTTPError):
+        logging.exception("Scheduled SharePoint media scan failed.")
+        raise
+    except Exception:
+        logging.exception("Unexpected scheduled SharePoint media scan failure.")
+        raise
 
-    return payload if isinstance(payload, dict) else {}
-
-
-def _error_response_for_exception(err: Exception) -> func.HttpResponse:
-    if isinstance(err, AzureError):
-        logging.exception("Content Understanding request failed.")
-        return _json_response(
-            {
-                "status": "error",
-                "stage": "content_understanding",
-                "message": getattr(err, "message", str(err)),
-            },
-            status_code=502,
-        )
-
-    if isinstance(err, requests.HTTPError):
-        logging.exception("SharePoint sidecar upload failed.")
-        response_text = err.response.text if err.response is not None else str(err)
-        status_code = err.response.status_code if err.response is not None else None
-        url = err.response.url if err.response is not None else None
-        return _json_response(
-            {
-                "status": "error",
-                "stage": "sharepoint_upload",
-                "statusCode": status_code,
-                "url": url,
-                "message": response_text,
-            },
-            status_code=502,
-        )
-
-    logging.exception("Unexpected failure.")
-    return _json_response(
-        {
-            "status": "error",
-            "stage": "unexpected",
-            "message": str(err),
-        },
-        status_code=500,
-    )
-
-
-def _handle_analyze_sharepoint_media(req: func.HttpRequest) -> func.HttpResponse:
-    try:
-        response_payload, status_code = process_sharepoint_media(_parse_body(req))
-    except Exception as err:
-        return _error_response_for_exception(err)
-
-    return _json_response(response_payload, status_code=status_code)
-
-
-@app.route(route="analyze-sharepoint-media", methods=["POST"])
-def analyze_sharepoint_media(req: func.HttpRequest) -> func.HttpResponse:
-    logging.info("Processing SharePoint media analysis request.")
-    return _handle_analyze_sharepoint_media(req)
+    logging.info("Scheduled SharePoint media scan summary: %s", summary)

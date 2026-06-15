@@ -1,8 +1,13 @@
-# Python
+# Source control and editor files
+.git*
+.vscode/
+.idea/
+
+# Python local artifacts
 __pycache__/
 **/__pycache__/
 *.py[cod]
-*$py.class
+**/*.py[cod]
 .python_packages/
 .venv/
 venv/
@@ -10,7 +15,6 @@ venv/
 # Local settings and secrets
 .env
 .env.*
-!.env.sample
 local.settings.json
 local.settings.*.json
 local.settings.json copy.sample
@@ -23,12 +27,8 @@ __blobstorage__/
 __queuestorage__/
 __tablestorage__/
 
-# Local/generated outputs
+# Local test/generated artifacts
 cu-result*.json
 *.log
-
-# Editor/OS
-.vscode/
-.idea/
-.DS_Store
-Thumbs.db
+scripts/
+docs/
